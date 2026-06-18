@@ -1,0 +1,7 @@
+# GoDaddy Deployment ZIP
+SSS_website.zip
+
+# OS temporary files
+.DS_Store
+Thumbs.db
+desktop.ini
