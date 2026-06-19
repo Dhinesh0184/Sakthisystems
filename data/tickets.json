@@ -1,0 +1,46 @@
+[
+  {
+    "ticketId": "SSS-1001",
+    "name": "Ramesh Kumar",
+    "phone": "9876543210",
+    "brand": "Dell",
+    "deviceType": "Laptop",
+    "problem": "Laptop Not Powering On (Motherboard Failure)",
+    "date": "2026-06-15",
+    "status": "Repairing",
+    "notes": "IC power management chip replacement in progress. Sourcing spare parts."
+  },
+  {
+    "ticketId": "SSS-1002",
+    "name": "Priya Dharshini",
+    "phone": "8765432109",
+    "brand": "Apple MacBook",
+    "deviceType": "Laptop",
+    "problem": "Liquid Spill & Keypad Malfunction",
+    "date": "2026-06-16",
+    "status": "Ready",
+    "notes": "Keyboard replaced, motherboard ultrasonically cleaned. Device fully functional and tested."
+  },
+  {
+    "ticketId": "SSS-1003",
+    "name": "Vikram Singh",
+    "phone": "7654321098",
+    "brand": "HP",
+    "deviceType": "Desktop",
+    "problem": "Slow Performance & HDD replacement",
+    "date": "2026-06-17",
+    "status": "Diagnosis",
+    "notes": "Technical diagnosis underway. Testing RAM and analyzing motherboard heat dissipation."
+  },
+  {
+    "ticketId": "SSS-1004",
+    "name": "John Doe",
+    "phone": "9876543210",
+    "brand": "HP",
+    "deviceType": "Laptop",
+    "problem": "Hard drive failure, needs replacement.",
+    "date": "60625-02-20",
+    "status": "Received",
+    "notes": "Pre-booked online. Device waiting drop-off or collection.Diagnosing HP hard drive sectors. Bad sectors found. Procuring new SSD."
+  }
+]

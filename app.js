@@ -1,54 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // --- INITIALIZE DEFAULT DATA IN LOCAL STORAGE ---
-  const defaultTickets = [
-    {
-      ticketId: 'SSS-1001',
-      name: 'Ramesh Kumar',
-      phone: '9876543210',
-      brand: 'Dell',
-      deviceType: 'Laptop',
-      problem: 'Laptop Not Powering On (Motherboard Failure)',
-      date: '2026-06-15',
-      status: 'Repairing',
-      notes: 'IC power management chip replacement in progress. Sourcing spare parts.'
-    },
-    {
-      ticketId: 'SSS-1002',
-      name: 'Priya Dharshini',
-      phone: '8765432109',
-      brand: 'Apple MacBook',
-      deviceType: 'Laptop',
-      problem: 'Liquid Spill & Keypad Malfunction',
-      date: '2026-06-16',
-      status: 'Ready',
-      notes: 'Keyboard replaced, motherboard ultrasonically cleaned. Device fully functional and tested.'
-    },
-    {
-      ticketId: 'SSS-1003',
-      name: 'Vikram Singh',
-      phone: '7654321098',
-      brand: 'HP',
-      deviceType: 'Desktop',
-      problem: 'Slow Performance & HDD replacement',
-      date: '2026-06-17',
-      status: 'Diagnosis',
-      notes: 'Technical diagnosis underway. Testing RAM and analyzing motherboard heat dissipation.'
-    }
-  ];
+  // --- BACKEND API CONFIG & HELPERS ---
+  let cachedDashboardTickets = [];
 
-  if (!localStorage.getItem('sakthi_tickets')) {
-    localStorage.setItem('sakthi_tickets', JSON.stringify(defaultTickets));
-  }
-
-  // Helper to get tickets
-  function getTickets() {
-    return JSON.parse(localStorage.getItem('sakthi_tickets')) || [];
-  }
-
-  // Helper to save tickets
-  function saveTickets(tickets) {
-    localStorage.setItem('sakthi_tickets', JSON.stringify(tickets));
+  function getAuthHeader() {
+    const token = localStorage.getItem('sakthi_admin_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 
   // --- HEADER & SCROLL ANIMATION ---
@@ -223,34 +180,35 @@ document.addEventListener('DOMContentLoaded', () => {
       submitBtn.disabled = true;
       submitBtn.textContent = 'Processing...';
 
-      // Simulate network request delay
-      setTimeout(() => {
-        const tickets = getTickets();
-        const nextIdNum = tickets.length > 0 ? parseInt(tickets[tickets.length - 1].ticketId.split('-')[1]) + 1 : 1004;
-        const newTicketId = `SSS-${nextIdNum}`;
+      const bookingPayload = {
+        name: document.getElementById('fullName').value.trim(),
+        phone: document.getElementById('phone').value.trim(),
+        brand: document.getElementById('deviceBrand').value,
+        deviceType: document.getElementById('deviceType').value,
+        problem: document.getElementById('problemDesc').value.trim(),
+        date: document.getElementById('bookingDate').value
+      };
 
-        const newTicket = {
-          ticketId: newTicketId,
-          name: document.getElementById('fullName').value.trim(),
-          phone: document.getElementById('phone').value.trim(),
-          brand: document.getElementById('deviceBrand').value,
-          deviceType: document.getElementById('deviceType').value,
-          problem: document.getElementById('problemDesc').value.trim(),
-          date: document.getElementById('bookingDate').value,
-          status: 'Received',
-          notes: 'Pre-booked online. Device waiting drop-off or collection.'
-        };
-
-        tickets.push(newTicket);
-        saveTickets(tickets);
+      fetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookingPayload)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to create booking on the server.');
+        return res.json();
+      })
+      .then(data => {
+        const newTicket = data.ticket;
 
         // Update success states
-        ticketIdDisplay.textContent = newTicketId;
+        ticketIdDisplay.textContent = newTicket.ticketId;
         bookingForm.style.display = 'none';
         bookingSuccessBox.style.display = 'flex';
 
         // Configure WhatsApp Share Button
-        const whatsappMsg = `Hi ${newTicket.name}, your repair appointment at Sakthi Systems & Services has been booked successfully! Ticket ID: ${newTicket.ticketId}. Track progress here: http://localhost:8080/#booking-tracking`;
+        const trackUrl = `${window.location.origin}/#booking-tracking`;
+        const whatsappMsg = `Hi ${newTicket.name}, your repair appointment at Sakthi Systems & Services has been booked successfully! Ticket ID: ${newTicket.ticketId}. Track progress here: ${trackUrl}`;
         const successWhatsAppBtn = document.getElementById('successWhatsAppBtn');
         if (successWhatsAppBtn) {
           successWhatsAppBtn.href = `https://wa.me/91${newTicket.phone}?text=${encodeURIComponent(whatsappMsg)}`;
@@ -274,7 +232,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (document.getElementById('employee-dashboard').classList.contains('active')) {
           renderDashboardTickets();
         }
-      }, 1500);
+      })
+      .catch(err => {
+        alert(err.message || 'Error creating booking. Please check connection and try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Book Appointment';
+      });
     }
   });
 
@@ -312,16 +275,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const queryId = trackIdInput.value.trim().toUpperCase();
     const queryPhone = trackPhoneInput.value.trim();
 
-    const tickets = getTickets();
-    const foundTicket = tickets.find(t => t.ticketId.toUpperCase() === queryId && t.phone === queryPhone);
-
-    if (foundTicket) {
-      renderTrackingDetails(foundTicket);
-    } else {
-      alert('No matching repair ticket found. Please check Ticket ID and Mobile Number.');
-      trackingDisplay.classList.remove('active');
-      trackingEmpty.style.display = 'flex';
-    }
+    fetch(`/api/tickets/track?ticketId=${encodeURIComponent(queryId)}&phone=${encodeURIComponent(queryPhone)}`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('No matching repair ticket found. Please check Ticket ID and Mobile Number.');
+        }
+        return res.json();
+      })
+      .then(ticket => {
+        renderTrackingDetails(ticket);
+      })
+      .catch(err => {
+        alert(err.message);
+        trackingDisplay.classList.remove('active');
+        trackingEmpty.style.display = 'flex';
+      });
   });
 
   function renderTrackingDetails(ticket) {
@@ -460,7 +428,14 @@ document.addEventListener('DOMContentLoaded', () => {
   function checkUrlForLogin() {
     const hash = window.location.hash.toLowerCase();
     if (hash === '#admin') {
-      loginModal.classList.add('active');
+      const token = localStorage.getItem('sakthi_admin_token');
+      if (token) {
+        dashboardSection.classList.add('active');
+        dashboardSection.scrollIntoView({ behavior: 'smooth' });
+        renderDashboardTickets();
+      } else {
+        loginModal.classList.add('active');
+      }
     }
   }
 
@@ -493,91 +468,125 @@ document.addEventListener('DOMContentLoaded', () => {
   // Form Submit
   loginForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const user = document.getElementById('loginUsername').value.trim();
-    const pass = document.getElementById('loginPassword').value.trim();
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value.trim();
 
-    if (user === 'admin' && pass === 'password123') {
-      // Login success
-      loginForm.reset();
-      loginModal.classList.remove('active');
-      
-      // Open dashboard
-      dashboardSection.classList.add('active');
-      dashboardSection.scrollIntoView({ behavior: 'smooth' });
-      
-      // Load details
-      renderDashboardTickets();
-    } else {
-      alert('Invalid Username or Password.');
-    }
+    fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    })
+    .then(res => {
+      if (!res.ok) {
+        throw new Error('Invalid Username or Password.');
+      }
+      return res.json();
+    })
+    .then(data => {
+      if (data.success && data.token) {
+        localStorage.setItem('sakthi_admin_token', data.token);
+        loginForm.reset();
+        loginModal.classList.remove('active');
+        
+        // Open dashboard
+        dashboardSection.classList.add('active');
+        dashboardSection.scrollIntoView({ behavior: 'smooth' });
+        
+        // Load details
+        renderDashboardTickets();
+      }
+    })
+    .catch(err => {
+      alert(err.message);
+    });
   });
 
   // Logout
   logoutBtn.addEventListener('click', () => {
+    localStorage.removeItem('sakthi_admin_token');
     dashboardSection.classList.remove('active');
     activeDashboardTicketId = null;
     document.getElementById('db-detail-panel').classList.remove('active');
     document.getElementById('db-detail-empty').style.display = 'flex';
+    // Clear admin hash
+    history.pushState("", document.title, window.location.pathname + window.location.search);
   });
 
   // Render tickets list in dashboard
   function renderDashboardTickets() {
     const listWrapper = document.getElementById('ticketsList');
-    listWrapper.innerHTML = '';
+    listWrapper.innerHTML = '<p style="color:#64748B; text-align:center; padding: 2rem;">Loading tickets...</p>';
     
-    const tickets = getTickets();
-    if (tickets.length === 0) {
-      listWrapper.innerHTML = '<p style="color:#64748B; text-align:center; padding: 2rem;">No active repair tickets found.</p>';
-      return;
-    }
+    fetch('/api/admin/tickets', {
+      headers: getAuthHeader()
+    })
+    .then(res => {
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          localStorage.removeItem('sakthi_admin_token');
+          dashboardSection.classList.remove('active');
+          alert('Session expired. Please log in again.');
+        }
+        throw new Error('Failed to load dashboard tickets');
+      }
+      return res.json();
+    })
+    .then(tickets => {
+      cachedDashboardTickets = tickets;
+      listWrapper.innerHTML = '';
+      if (tickets.length === 0) {
+        listWrapper.innerHTML = '<p style="color:#64748B; text-align:center; padding: 2rem;">No active repair tickets found.</p>';
+        return;
+      }
 
-    // Sort tickets reverse-chronologically
-    const reversedTickets = [...tickets].reverse();
+      // Sort tickets reverse-chronologically
+      const reversedTickets = [...tickets].reverse();
 
-    reversedTickets.forEach(ticket => {
-      const row = document.createElement('div');
-      row.className = `ticket-row ${activeDashboardTicketId === ticket.ticketId ? 'active' : ''}`;
-      row.setAttribute('data-id', ticket.ticketId);
+      reversedTickets.forEach(ticket => {
+        const row = document.createElement('div');
+        row.className = `ticket-row ${activeDashboardTicketId === ticket.ticketId ? 'active' : ''}`;
+        row.setAttribute('data-id', ticket.ticketId);
 
-      const statusLabels = {
-        'Received': 'Received',
-        'Diagnosis': 'Diagnosis',
-        'Waiting': 'Waiting',
-        'Repairing': 'Repairing',
-        'Testing': 'Testing',
-        'Ready': 'Ready'
-      };
+        const statusLabels = {
+          'Received': 'Received',
+          'Diagnosis': 'Diagnosis',
+          'Waiting': 'Waiting',
+          'Repairing': 'Repairing',
+          'Testing': 'Testing',
+          'Ready': 'Ready'
+        };
 
-      const badgeClass = `badge-status-${ticket.status.toLowerCase()}`;
+        const badgeClass = `badge-status-${ticket.status.toLowerCase()}`;
 
-      row.innerHTML = `
-        <div class="ticket-row-main">
-          <h4>${ticket.ticketId} - ${ticket.name}</h4>
-          <p>${ticket.brand} ${ticket.deviceType} | Ph: ${ticket.phone}</p>
-        </div>
-        <div class="ticket-row-meta">
-          <span class="ticket-row-badge ${badgeClass}">${statusLabels[ticket.status] || ticket.status}</span>
-          <span class="ticket-row-date">${ticket.date}</span>
-        </div>
-      `;
+        row.innerHTML = `
+          <div class="ticket-row-main">
+            <h4>${ticket.ticketId} - ${ticket.name}</h4>
+            <p>${ticket.brand} ${ticket.deviceType} | Ph: ${ticket.phone}</p>
+          </div>
+          <div class="ticket-row-meta">
+            <span class="ticket-row-badge ${badgeClass}">${statusLabels[ticket.status] || ticket.status}</span>
+            <span class="ticket-row-date">${ticket.date}</span>
+          </div>
+        `;
 
-      row.addEventListener('click', () => {
-        // Highlight selected
-        document.querySelectorAll('.ticket-row').forEach(r => r.classList.remove('active'));
-        row.classList.add('active');
-        
-        loadTicketDetails(ticket.ticketId);
+        row.addEventListener('click', () => {
+          document.querySelectorAll('.ticket-row').forEach(r => r.classList.remove('active'));
+          row.classList.add('active');
+          loadTicketDetails(ticket.ticketId);
+        });
+
+        listWrapper.appendChild(row);
       });
-
-      listWrapper.appendChild(row);
+    })
+    .catch(err => {
+      listWrapper.innerHTML = `<p style="color:#EF4444; text-align:center; padding: 2rem;">${err.message}</p>`;
     });
   }
 
   // Load ticket details on right panel
   function loadTicketDetails(ticketId) {
     activeDashboardTicketId = ticketId;
-    const tickets = getTickets();
-    const ticket = tickets.find(t => t.ticketId === ticketId);
+    const ticket = cachedDashboardTickets.find(t => t.ticketId === ticketId);
 
     if (ticket) {
       document.getElementById('db-detail-empty').style.display = 'none';
@@ -604,19 +613,30 @@ document.addEventListener('DOMContentLoaded', () => {
     e.preventDefault();
     if (!activeDashboardTicketId) return;
 
-    const tickets = getTickets();
-    const ticketIndex = tickets.findIndex(t => t.ticketId === activeDashboardTicketId);
+    const newStatus = document.getElementById('dbStatusSelect').value;
+    const newNotes = document.getElementById('dbNotesText').value.trim();
 
-    if (ticketIndex !== -1) {
-      // Modify properties
-      tickets[ticketIndex].status = document.getElementById('dbStatusSelect').value;
-      tickets[ticketIndex].notes = document.getElementById('dbNotesText').value.trim();
+    const submitBtn = updateTicketForm.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Updating...';
 
-      saveTickets(tickets);
-      
-      // Update visual feedbacks
+    fetch(`/api/admin/tickets/${encodeURIComponent(activeDashboardTicketId)}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader()
+      },
+      body: JSON.stringify({ status: newStatus, notes: newNotes })
+    })
+    .then(res => {
+      if (!res.ok) throw new Error('Failed to update ticket status on server.');
+      return res.json();
+    })
+    .then(data => {
       alert("Status updated");
-      
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Update Status';
+
       // Refresh displays
       renderDashboardTickets();
       loadTicketDetails(activeDashboardTicketId);
@@ -624,9 +644,14 @@ document.addEventListener('DOMContentLoaded', () => {
       // If the customer search display is active and tracking this ticket, update it!
       const currentSearchedTicketId = document.getElementById('displayTicketId').textContent;
       if (currentSearchedTicketId === activeDashboardTicketId) {
-        renderTrackingDetails(tickets[ticketIndex]);
+        renderTrackingDetails(data.ticket);
       }
-    }
+    })
+    .catch(err => {
+      alert(err.message);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Update Status';
+    });
   });
 
   // --- NOTIFICATION SIMULATOR TOAST FUNCTION ---
