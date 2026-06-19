@@ -476,9 +476,14 @@ document.addEventListener('DOMContentLoaded', () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     })
-    .then(res => {
+    .then(async res => {
       if (!res.ok) {
-        throw new Error('Invalid Username or Password.');
+        let errMsg = 'Invalid Username or Password.';
+        try {
+          const errData = await res.json();
+          if (errData && errData.message) errMsg = errData.message;
+        } catch (e) {}
+        throw new Error(errMsg);
       }
       return res.json();
     })

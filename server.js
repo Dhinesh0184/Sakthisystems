@@ -19,6 +19,15 @@ app.use(express.static(__dirname));
 // DB configuration
 const DATA_DIR = path.join(__dirname, 'data');
 const DB_PATH = path.join(DATA_DIR, 'tickets.json');
+const USERS_DB_PATH = path.join(DATA_DIR, 'users.json');
+
+const DEFAULT_USERS = [
+  {
+    username: 'admin',
+    password: 'password123',
+    role: 'admin'
+  }
+];
 
 const DEFAULT_TICKETS = [
   {
@@ -63,6 +72,20 @@ if (!existsSync(DATA_DIR)) {
 if (!existsSync(DB_PATH)) {
   writeFileSync(DB_PATH, JSON.stringify(DEFAULT_TICKETS, null, 2), 'utf-8');
 }
+if (!existsSync(USERS_DB_PATH)) {
+  writeFileSync(USERS_DB_PATH, JSON.stringify(DEFAULT_USERS, null, 2), 'utf-8');
+}
+
+// Helper to read users database file asynchronously
+async function readUsers() {
+  try {
+    const data = await fs.readFile(USERS_DB_PATH, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading users database file:', error);
+    return [];
+  }
+}
 
 // Helper functions for reading/writing tickets asynchronously
 async function readTickets() {
@@ -88,20 +111,34 @@ async function writeTickets(tickets) {
 // --- API ENDPOINTS ---
 
 // Admin Login
-app.post('/api/auth/login', (req, res) => {
-  const { username, password } = req.req ? req.req.body : req.body; // fallback if needed
-  const user = req.body.username;
-  const pass = req.body.password;
+app.post('/api/auth/login', async (req, res) => {
+  const user = req.body && req.body.username ? req.body.username.trim().toLowerCase() : '';
+  const pass = req.body && req.body.password ? req.body.password.trim() : '';
 
-  if (user === 'admin' && pass === 'password123') {
-    return res.status(200).json({
-      success: true,
-      token: 'admin-secret-session-token-sakthi'
-    });
-  } else {
-    return res.status(401).json({
+  console.log(`[Auth] Login attempt for username: "${user}"`);
+
+  try {
+    const users = await readUsers();
+    const matchedUser = users.find(u => u.username.toLowerCase() === user && u.password === pass);
+
+    if (matchedUser) {
+      console.log(`[Auth] Login successful for user: "${user}"`);
+      return res.status(200).json({
+        success: true,
+        token: `admin-token-sakthi-${matchedUser.username}`
+      });
+    } else {
+      console.warn(`[Auth] Login failed for user: "${user}" - Invalid username or password.`);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid Username or Password'
+      });
+    }
+  } catch (error) {
+    console.error(`[Auth] Login route error:`, error);
+    return res.status(500).json({
       success: false,
-      message: 'Invalid Username or Password'
+      message: 'Internal server error during login validation'
     });
   }
 });
@@ -114,11 +151,22 @@ async function requireAdmin(req, res, next) {
   }
 
   const token = authHeader.split(' ')[1];
-  if (token === 'admin-secret-session-token-sakthi') {
-    next();
-  } else {
-    return res.status(403).json({ success: false, message: 'Invalid or expired session token' });
+  
+  if (token.startsWith('admin-token-sakthi-')) {
+    const usernameFromToken = token.replace('admin-token-sakthi-', '');
+    try {
+      const users = await readUsers();
+      const userExists = users.some(u => u.username.toLowerCase() === usernameFromToken.toLowerCase());
+      if (userExists) {
+        next();
+        return;
+      }
+    } catch (e) {
+      console.error('requireAdmin validation error:', e);
+    }
   }
+
+  return res.status(403).json({ success: false, message: 'Invalid or expired session token' });
 }
 
 // Fetch all tickets (Admin only)
