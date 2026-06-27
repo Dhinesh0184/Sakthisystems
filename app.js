@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   // --- BACKEND API CONFIG & HELPERS ---
+  const API_BASE = window.location.hostname.includes('sakthisystemsandservices.in')
+    ? 'https://sakthi-backend.onrender.com'
+    : '';
+
   let cachedDashboardTickets = [];
 
   function getAuthHeader() {
@@ -189,7 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         date: document.getElementById('bookingDate').value
       };
 
-      fetch('/api/tickets', {
+      fetch(`${API_BASE}/api/tickets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookingPayload)
@@ -275,7 +279,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const queryId = trackIdInput.value.trim().toUpperCase();
     const queryPhone = trackPhoneInput.value.trim();
 
-    fetch(`/api/tickets/track?ticketId=${encodeURIComponent(queryId)}&phone=${encodeURIComponent(queryPhone)}`)
+    fetch(`${API_BASE}/api/tickets/track?ticketId=${encodeURIComponent(queryId)}&phone=${encodeURIComponent(queryPhone)}`)
       .then(res => {
         if (!res.ok) {
           throw new Error('No matching repair ticket found. Please check Ticket ID and Mobile Number.');
@@ -471,7 +475,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
 
-    fetch('/api/auth/login', {
+    fetch(`${API_BASE}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -522,7 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const listWrapper = document.getElementById('ticketsList');
     listWrapper.innerHTML = '<p style="color:#64748B; text-align:center; padding: 2rem;">Loading tickets...</p>';
     
-    fetch('/api/admin/tickets', {
+    fetch(`${API_BASE}/api/admin/tickets`, {
       headers: getAuthHeader()
     })
     .then(res => {
@@ -625,7 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Updating...';
 
-    fetch(`/api/admin/tickets/${encodeURIComponent(activeDashboardTicketId)}`, {
+    fetch(`${API_BASE}/api/admin/tickets/${encodeURIComponent(activeDashboardTicketId)}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

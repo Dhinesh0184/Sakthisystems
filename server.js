@@ -10,7 +10,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Enable CORS and JSON parsing
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://sakthisystemsandservices.in",
+    "http://localhost:3000"
+  ]
+}));
 app.use(express.json());
 
 // Serve static frontend files from current directory
@@ -29,41 +34,7 @@ const DEFAULT_USERS = [
   }
 ];
 
-const DEFAULT_TICKETS = [
-  {
-    ticketId: 'SSS-1001',
-    name: 'Ramesh Kumar',
-    phone: '9876543210',
-    brand: 'Dell',
-    deviceType: 'Laptop',
-    problem: 'Laptop Not Powering On (Motherboard Failure)',
-    date: '2026-06-15',
-    status: 'Repairing',
-    notes: 'IC power management chip replacement in progress. Sourcing spare parts.'
-  },
-  {
-    ticketId: 'SSS-1002',
-    name: 'Priya Dharshini',
-    phone: '8765432109',
-    brand: 'Apple MacBook',
-    deviceType: 'Laptop',
-    problem: 'Liquid Spill & Keypad Malfunction',
-    date: '2026-06-16',
-    status: 'Ready',
-    notes: 'Keyboard replaced, motherboard ultrasonically cleaned. Device fully functional and tested.'
-  },
-  {
-    ticketId: 'SSS-1003',
-    name: 'Vikram Singh',
-    phone: '7654321098',
-    brand: 'HP',
-    deviceType: 'Desktop',
-    problem: 'Slow Performance & HDD replacement',
-    date: '2026-06-17',
-    status: 'Diagnosis',
-    notes: 'Technical diagnosis underway. Testing RAM and analyzing motherboard heat dissipation.'
-  }
-];
+const DEFAULT_TICKETS = [];
 
 // Initialize database file synchronously on startup
 if (!existsSync(DATA_DIR)) {
@@ -151,7 +122,7 @@ async function requireAdmin(req, res, next) {
   }
 
   const token = authHeader.split(' ')[1];
-  
+
   if (token.startsWith('admin-token-sakthi-')) {
     const usernameFromToken = token.replace('admin-token-sakthi-', '');
     try {
@@ -208,7 +179,7 @@ app.post('/api/tickets', async (req, res) => {
   }
 
   const tickets = await readTickets();
-  
+
   // Calculate next ticket ID number atomically on the server
   let nextIdNum = 1004;
   if (tickets.length > 0) {
