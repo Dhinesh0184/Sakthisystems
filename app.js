@@ -1,9 +1,10 @@
+const API_URL = "https://sakthisystems.onrender.com";
+
 document.addEventListener('DOMContentLoaded', () => {
 
   // --- BACKEND API CONFIG & HELPERS ---
-  const API_BASE = window.location.hostname.includes('sakthisystemsandservices.in')
-    ? 'https://sakthi-backend.onrender.com'
-    : '';
+  // API_BASE is replaced by API_URL as per requirements
+
 
   let cachedDashboardTickets = [];
 
@@ -47,14 +48,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (timeline) {
       const progressLine = document.querySelector('.timeline-progress');
       const timelineItems = document.querySelectorAll('.timeline-item');
-      
+
       const timelineRect = timeline.getBoundingClientRect();
       const viewportHeight = window.innerHeight;
-      
+
       if (timelineRect.top < viewportHeight && timelineRect.bottom > 0) {
         const scrolledRatio = Math.max(0, Math.min(1, (viewportHeight - timelineRect.top) / (timelineRect.height + viewportHeight - 300)));
         progressLine.style.height = `${scrolledRatio * 100}%`;
-        
+
         timelineItems.forEach(item => {
           const itemRect = item.getBoundingClientRect();
           if (itemRect.top < viewportHeight - 150) {
@@ -193,55 +194,55 @@ document.addEventListener('DOMContentLoaded', () => {
         date: document.getElementById('bookingDate').value
       };
 
-      fetch(`${API_BASE}/api/tickets`, {
+      fetch(`${API_URL}/api/tickets`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bookingPayload)
       })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to create booking on the server.');
-        return res.json();
-      })
-      .then(data => {
-        const newTicket = data.ticket;
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to create booking on the server.');
+          return res.json();
+        })
+        .then(data => {
+          const newTicket = data.ticket;
 
-        // Update success states
-        ticketIdDisplay.textContent = newTicket.ticketId;
-        bookingForm.style.display = 'none';
-        bookingSuccessBox.style.display = 'flex';
+          // Update success states
+          ticketIdDisplay.textContent = newTicket.ticketId;
+          bookingForm.style.display = 'none';
+          bookingSuccessBox.style.display = 'flex';
 
-        // Configure WhatsApp Share Button
-        const trackUrl = `${window.location.origin}/#booking-tracking`;
-        const whatsappMsg = `Hi ${newTicket.name}, your repair appointment at Sakthi Systems & Services has been booked successfully! Ticket ID: ${newTicket.ticketId}. Track progress here: ${trackUrl}`;
-        const successWhatsAppBtn = document.getElementById('successWhatsAppBtn');
-        if (successWhatsAppBtn) {
-          successWhatsAppBtn.href = `https://wa.me/91${newTicket.phone}?text=${encodeURIComponent(whatsappMsg)}`;
-        }
+          // Configure WhatsApp Share Button
+          const trackUrl = `${window.location.origin}/#booking-tracking`;
+          const whatsappMsg = `Hi ${newTicket.name}, your repair appointment at Sakthi Systems & Services has been booked successfully! Ticket ID: ${newTicket.ticketId}. Track progress here: ${trackUrl}`;
+          const successWhatsAppBtn = document.getElementById('successWhatsAppBtn');
+          if (successWhatsAppBtn) {
+            successWhatsAppBtn.href = `https://wa.me/91${newTicket.phone}?text=${encodeURIComponent(whatsappMsg)}`;
+          }
 
-        // Trigger Simulated Notification Sequence: SMS, WhatsApp, then Owner Alert
-        showNotificationToast('sms', newTicket.name, newTicket.phone, newTicket.ticketId);
-        setTimeout(() => {
-          showNotificationToast('whatsapp', newTicket.name, newTicket.phone, newTicket.ticketId);
-        }, 5000);
-        setTimeout(() => {
-          showNotificationToast('owner', newTicket.name, newTicket.phone, newTicket.ticketId);
-        }, 10000);
+          // Trigger Simulated Notification Sequence: SMS, WhatsApp, then Owner Alert
+          showNotificationToast('sms', newTicket.name, newTicket.phone, newTicket.ticketId);
+          setTimeout(() => {
+            showNotificationToast('whatsapp', newTicket.name, newTicket.phone, newTicket.ticketId);
+          }, 5000);
+          setTimeout(() => {
+            showNotificationToast('owner', newTicket.name, newTicket.phone, newTicket.ticketId);
+          }, 10000);
 
-        // Reset inputs
-        bookingForm.reset();
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Book Appointment';
+          // Reset inputs
+          bookingForm.reset();
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'Book Appointment';
 
-        // Refresh Dashboard if open
-        if (document.getElementById('employee-dashboard').classList.contains('active')) {
-          renderDashboardTickets();
-        }
-      })
-      .catch(err => {
-        alert(err.message || 'Error creating booking. Please check connection and try again.');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = 'Book Appointment';
-      });
+          // Refresh Dashboard if open
+          if (document.getElementById('employee-dashboard').classList.contains('active')) {
+            renderDashboardTickets();
+          }
+        })
+        .catch(err => {
+          alert(err.message || 'Error creating booking. Please check connection and try again.');
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = 'Book Appointment';
+        });
     }
   });
 
@@ -279,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const queryId = trackIdInput.value.trim().toUpperCase();
     const queryPhone = trackPhoneInput.value.trim();
 
-    fetch(`${API_BASE}/api/tickets/track?ticketId=${encodeURIComponent(queryId)}&phone=${encodeURIComponent(queryPhone)}`)
+    fetch(`${API_URL}/api/tickets/track?ticketId=${encodeURIComponent(queryId)}&phone=${encodeURIComponent(queryPhone)}`)
       .then(res => {
         if (!res.ok) {
           throw new Error('No matching repair ticket found. Please check Ticket ID and Mobile Number.');
@@ -304,7 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('displayTicketId').textContent = ticket.ticketId;
     document.getElementById('displayBrandDevice').textContent = `${ticket.brand} ${ticket.deviceType}`;
     document.getElementById('displayNotes').textContent = ticket.notes || 'No notes available.';
-    
+
     // Status text mapping
     const statusLabels = {
       'Received': 'Device Received',
@@ -475,39 +476,39 @@ document.addEventListener('DOMContentLoaded', () => {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
 
-    fetch(`${API_BASE}/api/auth/login`, {
+    fetch(`${API_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
     })
-    .then(async res => {
-      if (!res.ok) {
-        let errMsg = 'Invalid Username or Password.';
-        try {
-          const errData = await res.json();
-          if (errData && errData.message) errMsg = errData.message;
-        } catch (e) {}
-        throw new Error(errMsg);
-      }
-      return res.json();
-    })
-    .then(data => {
-      if (data.success && data.token) {
-        localStorage.setItem('sakthi_admin_token', data.token);
-        loginForm.reset();
-        loginModal.classList.remove('active');
-        
-        // Open dashboard
-        dashboardSection.classList.add('active');
-        dashboardSection.scrollIntoView({ behavior: 'smooth' });
-        
-        // Load details
-        renderDashboardTickets();
-      }
-    })
-    .catch(err => {
-      alert(err.message);
-    });
+      .then(async res => {
+        if (!res.ok) {
+          let errMsg = 'Invalid Username or Password.';
+          try {
+            const errData = await res.json();
+            if (errData && errData.message) errMsg = errData.message;
+          } catch (e) { }
+          throw new Error(errMsg);
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (data.success && data.token) {
+          localStorage.setItem('sakthi_admin_token', data.token);
+          loginForm.reset();
+          loginModal.classList.remove('active');
+
+          // Open dashboard
+          dashboardSection.classList.add('active');
+          dashboardSection.scrollIntoView({ behavior: 'smooth' });
+
+          // Load details
+          renderDashboardTickets();
+        }
+      })
+      .catch(err => {
+        alert(err.message);
+      });
   });
 
   // Logout
@@ -525,49 +526,49 @@ document.addEventListener('DOMContentLoaded', () => {
   function renderDashboardTickets() {
     const listWrapper = document.getElementById('ticketsList');
     listWrapper.innerHTML = '<p style="color:#64748B; text-align:center; padding: 2rem;">Loading tickets...</p>';
-    
-    fetch(`${API_BASE}/api/admin/tickets`, {
+
+    fetch(`${API_URL}/api/admin/tickets`, {
       headers: getAuthHeader()
     })
-    .then(res => {
-      if (!res.ok) {
-        if (res.status === 401 || res.status === 403) {
-          localStorage.removeItem('sakthi_admin_token');
-          dashboardSection.classList.remove('active');
-          alert('Session expired. Please log in again.');
+      .then(res => {
+        if (!res.ok) {
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem('sakthi_admin_token');
+            dashboardSection.classList.remove('active');
+            alert('Session expired. Please log in again.');
+          }
+          throw new Error('Failed to load dashboard tickets');
         }
-        throw new Error('Failed to load dashboard tickets');
-      }
-      return res.json();
-    })
-    .then(tickets => {
-      cachedDashboardTickets = tickets;
-      listWrapper.innerHTML = '';
-      if (tickets.length === 0) {
-        listWrapper.innerHTML = '<p style="color:#64748B; text-align:center; padding: 2rem;">No active repair tickets found.</p>';
-        return;
-      }
+        return res.json();
+      })
+      .then(tickets => {
+        cachedDashboardTickets = tickets;
+        listWrapper.innerHTML = '';
+        if (tickets.length === 0) {
+          listWrapper.innerHTML = '<p style="color:#64748B; text-align:center; padding: 2rem;">No active repair tickets found.</p>';
+          return;
+        }
 
-      // Sort tickets reverse-chronologically
-      const reversedTickets = [...tickets].reverse();
+        // Sort tickets reverse-chronologically
+        const reversedTickets = [...tickets].reverse();
 
-      reversedTickets.forEach(ticket => {
-        const row = document.createElement('div');
-        row.className = `ticket-row ${activeDashboardTicketId === ticket.ticketId ? 'active' : ''}`;
-        row.setAttribute('data-id', ticket.ticketId);
+        reversedTickets.forEach(ticket => {
+          const row = document.createElement('div');
+          row.className = `ticket-row ${activeDashboardTicketId === ticket.ticketId ? 'active' : ''}`;
+          row.setAttribute('data-id', ticket.ticketId);
 
-        const statusLabels = {
-          'Received': 'Received',
-          'Diagnosis': 'Diagnosis',
-          'Waiting': 'Waiting',
-          'Repairing': 'Repairing',
-          'Testing': 'Testing',
-          'Ready': 'Ready'
-        };
+          const statusLabels = {
+            'Received': 'Received',
+            'Diagnosis': 'Diagnosis',
+            'Waiting': 'Waiting',
+            'Repairing': 'Repairing',
+            'Testing': 'Testing',
+            'Ready': 'Ready'
+          };
 
-        const badgeClass = `badge-status-${ticket.status.toLowerCase()}`;
+          const badgeClass = `badge-status-${ticket.status.toLowerCase()}`;
 
-        row.innerHTML = `
+          row.innerHTML = `
           <div class="ticket-row-main">
             <h4>${ticket.ticketId} - ${ticket.name}</h4>
             <p>${ticket.brand} ${ticket.deviceType} | Ph: ${ticket.phone}</p>
@@ -578,18 +579,18 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         `;
 
-        row.addEventListener('click', () => {
-          document.querySelectorAll('.ticket-row').forEach(r => r.classList.remove('active'));
-          row.classList.add('active');
-          loadTicketDetails(ticket.ticketId);
-        });
+          row.addEventListener('click', () => {
+            document.querySelectorAll('.ticket-row').forEach(r => r.classList.remove('active'));
+            row.classList.add('active');
+            loadTicketDetails(ticket.ticketId);
+          });
 
-        listWrapper.appendChild(row);
+          listWrapper.appendChild(row);
+        });
+      })
+      .catch(err => {
+        listWrapper.innerHTML = `<p style="color:#EF4444; text-align:center; padding: 2rem;">${err.message}</p>`;
       });
-    })
-    .catch(err => {
-      listWrapper.innerHTML = `<p style="color:#EF4444; text-align:center; padding: 2rem;">${err.message}</p>`;
-    });
   }
 
   // Load ticket details on right panel
@@ -629,7 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
     submitBtn.disabled = true;
     submitBtn.textContent = 'Updating...';
 
-    fetch(`${API_BASE}/api/admin/tickets/${encodeURIComponent(activeDashboardTicketId)}`, {
+    fetch(`${API_URL}/api/admin/tickets/${encodeURIComponent(activeDashboardTicketId)}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -637,30 +638,30 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       body: JSON.stringify({ status: newStatus, notes: newNotes })
     })
-    .then(res => {
-      if (!res.ok) throw new Error('Failed to update ticket status on server.');
-      return res.json();
-    })
-    .then(data => {
-      alert("Status updated");
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Update Status';
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to update ticket status on server.');
+        return res.json();
+      })
+      .then(data => {
+        alert("Status updated");
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Update Status';
 
-      // Refresh displays
-      renderDashboardTickets();
-      loadTicketDetails(activeDashboardTicketId);
+        // Refresh displays
+        renderDashboardTickets();
+        loadTicketDetails(activeDashboardTicketId);
 
-      // If the customer search display is active and tracking this ticket, update it!
-      const currentSearchedTicketId = document.getElementById('displayTicketId').textContent;
-      if (currentSearchedTicketId === activeDashboardTicketId) {
-        renderTrackingDetails(data.ticket);
-      }
-    })
-    .catch(err => {
-      alert(err.message);
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Update Status';
-    });
+        // If the customer search display is active and tracking this ticket, update it!
+        const currentSearchedTicketId = document.getElementById('displayTicketId').textContent;
+        if (currentSearchedTicketId === activeDashboardTicketId) {
+          renderTrackingDetails(data.ticket);
+        }
+      })
+      .catch(err => {
+        alert(err.message);
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Update Status';
+      });
   });
 
   // --- NOTIFICATION SIMULATOR TOAST FUNCTION ---
@@ -695,10 +696,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     toast.style.borderLeftColor = themeColor;
-    
+
     // Hide previous if active
     toast.classList.remove('show');
-    
+
     setTimeout(() => {
       toast.innerHTML = `
         <div class="simulated-notification-header">
@@ -725,7 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- INTERSECTION OBSERVER FOR SCROLL REVEAL ---
   const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-right');
-  
+
   if ('IntersectionObserver' in window && revealElements.length > 0) {
     const revealObserver = new IntersectionObserver((entries, observer) => {
       entries.forEach(entry => {

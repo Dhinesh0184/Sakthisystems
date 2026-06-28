@@ -13,8 +13,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
   origin: [
     "https://sakthisystemsandservices.in",
+    "https://www.sakthisystemsandservices.in",
     "http://localhost:3000"
-  ]
+  ],
+  credentials: true
 }));
 app.use(express.json());
 
